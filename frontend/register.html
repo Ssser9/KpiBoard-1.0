@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Регистрация — KPI Board</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .fade-in { animation: fade .35s ease-out both }
+    @keyframes fade { from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none} }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50">
+  <!-- top -->
+  <header class="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white">
+    <div class="mx-auto max-w-5xl px-4 py-5 flex items-center justify-between">
+      <div class="text-lg font-semibold">KPI Board</div>
+      <nav class="text-sm opacity-90">
+        Уже есть аккаунт?
+        <a class="underline hover:no-underline" href="login.html">Войти</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-5xl px-4 py-10">
+    <div class="max-w-md mx-auto">
+      <h1 class="text-2xl font-bold mb-5 text-slate-900">Создайте аккаунт</h1>
+
+      <form id="form" class="bg-white rounded-2xl shadow p-6 space-y-4 fade-in">
+        <div class="space-y-1">
+          <label class="text-sm text-slate-600" for="email">Email</label>
+          <div class="relative">
+            <input id="email" type="email" required placeholder="you@example.com"
+                   class="w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <span class="absolute right-3 top-2.5 text-slate-400">@</span>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-sm text-slate-600" for="password">Пароль</label>
+          <div class="relative">
+            <input id="password" type="password" required minlength="4" placeholder="••••••"
+                   class="w-full rounded-xl border px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <button type="button" id="togglePwd"
+                    class="absolute right-2 top-1.5 text-xs px-2 py-1 rounded-md border text-slate-600">Показать</button>
+          </div>
+        </div>
+
+        <button id="submitBtn" class="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white py-2 font-medium active:scale-[.99] transition">
+          Создать аккаунт
+        </button>
+
+        <div id="status" class="hidden text-sm"></div>
+        <div class="text-xs text-slate-500">API: <code id="apiLabel"></code></div>
+      </form>
+    </div>
+  </main>
+
+<script>
+const API_BASE = localStorage.getItem('apiBase') || 'http://127.0.0.1:8080';
+document.getElementById('apiLabel').textContent = API_BASE;
+
+const S = id => document.getElementById(id);
+const statusBox = S('status'), pwd = S('password'), btn = S('submitBtn');
+
+S('togglePwd').onclick = () => {
+  if (pwd.type === 'password') { pwd.type = 'text'; S('togglePwd').textContent = 'Скрыть'; }
+  else { pwd.type = 'password'; S('togglePwd').textContent = 'Показать'; }
+};
+
+function show(type, msg){
+  statusBox.className = 'text-sm mt-1 ' + (type==='ok'?'text-emerald-700':'text-rose-700');
+  statusBox.textContent = msg;
+  statusBox.classList.remove('hidden');
+}
+
+S('form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  statusBox.classList.add('hidden');
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'Создаю...';
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        email: S('email').value.trim(),
+        password: S('password').value
+      })
+    });
+
+    // читаем как текст, потом пытаемся распарсить JSON (если он есть)
+    const raw = await res.text();
+    let data = null;
+    try { data = JSON.parse(raw); } catch (_) {}
+
+    if (!res.ok) {
+      // выводим внятное сообщение из detail/message/error/сырого текста/кода
+      const msg =
+        (data && (data.detail || data.message || data.error)) ||
+        raw ||
+        `Ошибка ${res.status}`;
+      return show('err', msg);
+    }
+
+    show('ok', 'Аккаунт создан! Перехожу на вход…');
+    setTimeout(()=> location.href='login.html', 700);
+
+  } catch (err) {
+    show('err', 'Сетевой сбой');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Создать аккаунт';
+  }
+});
+</script>
+</body>
+</html>

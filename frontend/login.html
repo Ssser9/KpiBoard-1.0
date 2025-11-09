@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Вход — KPI Board</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .fade-in { animation: fade .35s ease-out both }
+    @keyframes fade { from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none} }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50">
+  <header class="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white">
+    <div class="mx-auto max-w-5xl px-4 py-5 flex items-center justify-between">
+      <div class="text-lg font-semibold">KPI Board</div>
+      <nav class="text-sm opacity-90">
+        Нет аккаунта?
+        <a class="underline hover:no-underline" href="register.html">Зарегистрироваться</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-5xl px-4 py-10">
+    <div class="max-w-md mx-auto">
+      <h1 class="text-2xl font-bold mb-5 text-slate-900">Войдите в аккаунт</h1>
+
+      <form id="form" class="bg-white rounded-2xl shadow p-6 space-y-4 fade-in">
+        <div class="space-y-1">
+          <label class="text-sm text-slate-600" for="email">Email</label>
+          <input id="email" type="email" required placeholder="you@example.com"
+                 class="w-full rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-sm text-slate-600" for="password">Пароль</label>
+          <div class="relative">
+            <input id="password" type="password" required placeholder="••••••"
+                   class="w-full rounded-xl border px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <button type="button" id="togglePwd"
+                    class="absolute right-2 top-1.5 text-xs px-2 py-1 rounded-md border text-slate-600">Показать</button>
+          </div>
+        </div>
+
+        <button id="submitBtn" class="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white py-2 font-medium active:scale-[.99] transition">
+          Войти
+        </button>
+
+        <div id="status" class="hidden text-sm"></div>
+        <div class="text-xs text-slate-500">API: <code id="apiLabel"></code></div>
+      </form>
+    </div>
+  </main>
+
+<script>
+const API_BASE = localStorage.getItem('apiBase') || 'http://127.0.0.1:8080';
+document.getElementById('apiLabel').textContent = API_BASE;
+
+const S=id=>document.getElementById(id);
+const statusBox=S('status'), pwd=S('password'), btn=S('submitBtn');
+
+S('togglePwd').onclick = () => {
+  if (pwd.type === 'password') { pwd.type = 'text'; S('togglePwd').textContent = 'Скрыть'; }
+  else { pwd.type = 'password'; S('togglePwd').textContent = 'Показать'; }
+};
+
+function show(type, msg){
+  statusBox.className = 'text-sm mt-1 ' + (type==='ok'?'text-emerald-700':'text-rose-700');
+  statusBox.textContent = msg; statusBox.classList.remove('hidden');
+}
+
+S('form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  statusBox.classList.add('hidden');
+  btn.disabled = true; btn.textContent = 'Проверяю...';
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ email: S('email').value.trim(), password: pwd.value })
+    });
+
+    // пробуем прочитать как текст, а затем распарсить в JSON (если это JSON)
+    const raw = await res.text();
+    let data = null;
+    try { data = JSON.parse(raw); } catch (_) {}
+
+    if (!res.ok) {
+      // соберём человекочитаемое сообщение из разных полей
+      const msg =
+        (data && (data.detail || data.message || data.error)) ||
+        raw ||                                    // если сервер прислал текст без JSON
+        `Ошибка ${res.status}`;                   // запасной вариант
+      return show('err', msg);
+    }
+
+    // успех: в ответе должен быть access_token
+    const token = data?.access_token;
+    if (!token) return show('err', 'Сервер не вернул access_token');
+    localStorage.setItem('access_token', token);
+    show('ok', 'Успешный вход. Открываю профиль…');
+    setTimeout(()=> location.href = 'profile.html', 600);
+
+  } catch (err) {
+    show('err', 'Сетевой сбой');                 // вообще не добрались до API
+  } finally {
+    btn.disabled = false; btn.textContent = 'Войти';
+  }
+});
+</script>
+</body>
+</html>

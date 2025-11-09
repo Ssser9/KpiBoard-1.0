@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Профиль — KPI Board</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .fade-in { animation: fade .35s ease-out both }
+    @keyframes fade { from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none} }
+    .label { @apply text-sm text-slate-600; }
+    .inp { @apply rounded-xl border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50">
+  <header class="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white">
+    <div class="mx-auto max-w-5xl px-4 py-5 flex items-center justify-between">
+      <div class="text-lg font-semibold">KPI Board</div>
+      <div class="flex items-center gap-4 text-sm">
+        <span id="me" class="opacity-90">…</span>
+        <button id="logout" class="underline hover:no-underline">Выйти</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-5xl px-4 py-10">
+    <div class="bg-white rounded-2xl shadow p-6 fade-in">
+      <h1 class="text-xl font-semibold mb-4 text-slate-900">Личный кабинет</h1>
+
+      <form id="form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="label" for="first_name">Имя</label>
+          <input id="first_name" class="inp w-full" placeholder="Иван">
+        </div>
+        <div>
+          <label class="label" for="last_name">Фамилия</label>
+          <input id="last_name" class="inp w-full" placeholder="Петров">
+        </div>
+        <div>
+          <label class="label" for="phone">Телефон</label>
+          <input id="phone" class="inp w-full" placeholder="+7...">
+        </div>
+        <div>
+          <label class="label" for="company_name">Компания</label>
+          <input id="company_name" class="inp w-full" placeholder="ООО ...">
+        </div>
+        <div>
+          <label class="label" for="inn">ИНН</label>
+          <input id="inn" class="inp w-full" placeholder="**********">
+        </div>
+        <div>
+          <label class="label" for="city">Город</label>
+          <input id="city" class="inp w-full" placeholder="Москва">
+        </div>
+        <div class="md:col-span-2">
+          <label class="label" for="address_line">Адрес</label>
+          <input id="address_line" class="inp w-full" placeholder="ул. Пушкина, дом ...">
+        </div>
+
+        <div class="md:col-span-2 flex items-center gap-3">
+          <button id="saveBtn" class="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 font-medium active:scale-[.99] transition">
+            Сохранить
+          </button>
+          <div id="status" class="hidden text-sm"></div>
+          <div class="text-xs text-slate-500 ml-auto">API: <code id="apiLabel"></code></div>
+        </div>
+      </form>
+    </div>
+  </main>
+
+<script>
+const API_BASE = localStorage.getItem('apiBase') || 'http://127.0.0.1:8080';
+document.getElementById('apiLabel').textContent = API_BASE;
+
+const token = localStorage.getItem('access_token');
+if(!token){ location.href='login.html'; }
+
+const headers = { 'Accept':'application/json', 'Authorization':'Bearer '+token, 'Content-Type':'application/json' };
+const S = id=>document.getElementById(id);
+const statusBox = S('status'), saveBtn=S('saveBtn');
+
+function show(type,msg){
+  statusBox.className='text-sm '+(type==='ok'?'text-emerald-700':'text-rose-700');
+  statusBox.textContent=msg; statusBox.classList.remove('hidden');
+}
+
+async function load(){
+  try{
+    const meRes = await fetch(`${API_BASE}/users/me`, {headers});
+    if(!meRes.ok){ if(meRes.status===401) return location.href='login.html'; throw new Error('me failed'); }
+    const me = await meRes.json();
+    S('me').textContent = `ID: ${me.id} · ${me.email}`;
+
+    const pRes = await fetch(`${API_BASE}/users/me/profile`, {headers});
+    if(pRes.ok){
+      const p = await pRes.json();
+      ['first_name','last_name','phone','company_name','inn','city','address_line']
+        .forEach(k => { if(p[k]) S(k).value = p[k]; });
+    }
+  }catch(e){ show('err','Ошибка загрузки'); }
+}
+S('logout').onclick = ()=>{ localStorage.removeItem('access_token'); location.href='login.html'; };
+
+S('form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  statusBox.classList.add('hidden');
+  saveBtn.disabled=true; saveBtn.textContent='Сохраняю...';
+  const body = {};
+  ['first_name','last_name','phone','company_name','inn','city','address_line']
+    .forEach(k=> body[k]=S(k).value.trim());
+  try{
+    const res = await fetch(`${API_BASE}/users/me/profile`, {
+      method:'PUT', headers, body: JSON.stringify(body)
+    });
+    if(!res.ok){ const t=await res.text(); return show('err','Ошибка: '+t); }
+    show('ok','Сохранено');
+  }catch(err){ show('err','Сетевой сбой'); }
+  finally{ saveBtn.disabled=false; saveBtn.textContent='Сохранить'; }
+});
+load();
+</script>
+</body>
+</html>
