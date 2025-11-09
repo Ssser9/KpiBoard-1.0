@@ -3,6 +3,7 @@ KpiBoard анализ расходов и доходов разных банко
 Локальное веб-приложение для учёта показателей и данных пользователей.
 Стек: FastAPI + PostgreSQL + Docker + HTML/CSS/JS (Vanilla).
 kpi_board_backend/
+
 │
 ├── app/
 │   ├── main.py              # Точка входа FastAPI
@@ -23,6 +24,7 @@ kpi_board_backend/
 ├── docker-compose.yml       # Контейнеры: API, DB, (опционально frontend)
 ├── requirements.txt         # Python-зависимости
 └── README.md                # Этот файл
+
 Запуск бэкенда
  — через Docker
 cmd: docker compose up --build
