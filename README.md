@@ -3,27 +3,25 @@ KpiBoard анализ расходов и доходов разных банко
 Локальное веб-приложение для учёта показателей и данных пользователей.
 Стек: FastAPI + PostgreSQL + Docker + HTML/CSS/JS (Vanilla).
 kpi_board_backend/
+├── 📁 app/                        # Основной backend-код (FastAPI)
+│   ├── main.py                   # ▶️ Точка входа FastAPI-приложения
+│   ├── models.py                 # 🧱 SQLAlchemy-модели (User, Profile, Settings)
+│   ├── schemas.py                # 🧩 Pydantic-схемы для валидации
+│   ├── db.py                     # 🗄️ Подключение к PostgreSQL
+│   ├── security.py               # 🔒 Хэширование паролей, JWT-токены
+│   └── routers/                  # 📡 API-маршруты
+│       ├── users.py              # 👤 Работа с пользователями, профилем, настройками
+│       └── auth.py               # 🔑 Авторизация и аутентификация
+│
+├── 📁 frontend/                  # Веб-интерфейс (HTML/CSS/JS)
+│   ├── register.html             # 📝 Регистрация нового пользователя
+│   ├── login.html                # 🔐 Вход в систему
+│   └── profile.html              # 🧍 Личный кабинет пользователя
+│
+├── 🐳 docker-compose.yml          # Настройки контейнеров: API, БД, (опционально фронт)
+├── 📦 requirements.txt            # Список зависимостей Python
+└── 📘 README.md                   # Этот файл
 
-│
-├── app/
-│   ├── main.py              # Точка входа FastAPI
-│   ├── models.py            # SQLAlchemy-модели (User, Profile, Settings)
-│   ├── schemas.py           # Pydantic-схемы
-│   ├── routers/
-│   │   ├── users.py         # Работа с пользователями, профилем, настройками
-│   │   └── auth.py          # Авторизация / JWT
-│   ├── db.py                # Подключение к PostgreSQL
-│   ├── security.py          # Хэширование, JWT
-│   └── ...
-│
-├── frontend/
-│   ├── register.html        # Регистрация нового пользователя
-│   ├── login.html           # Вход в аккаунт
-│   └── profile.html         # Личный кабинет пользователя
-│
-├── docker-compose.yml       # Контейнеры: API, DB, (опционально frontend)
-├── requirements.txt         # Python-зависимости
-└── README.md                # Этот файл
 
 Запуск бэкенда
  — через Docker
